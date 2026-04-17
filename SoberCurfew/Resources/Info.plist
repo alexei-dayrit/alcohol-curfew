@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>SoberCurfew</string>
+    <key>CFBundleDisplayName</key>
+    <string>SoberCurfew</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>UIUserInterfaceStyle</key>
+    <string>Dark</string>
+
+    <!-- HealthKit usage descriptions — required for App Store submission -->
+    <key>NSHealthShareUsageDescription</key>
+    <string>SoberCurfew reads your biological sex and body weight from Health to personalize BAC calculations using the Widmark formula.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>SoberCurfew logs your estimated Blood Alcohol Content to Health so you can track it over time.</string>
+
+    <!-- iCloud / CloudKit container -->
+    <key>NSUbiquitousContainers</key>
+    <dict>
+        <key>iCloud.com.sobercurfew.app</key>
+        <dict>
+            <key>NSUbiquitousContainerIsDocumentScopePublic</key>
+            <false/>
+            <key>NSUbiquitousContainerName</key>
+            <string>SoberCurfew</string>
+            <key>NSUbiquitousContainerSupportedFolderLevels</key>
+            <string>None</string>
+        </dict>
+    </dict>
+</dict>
+</plist>
