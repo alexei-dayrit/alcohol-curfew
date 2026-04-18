@@ -71,6 +71,8 @@ targets:
     platform: iOS
     sources:
       - path: SoberCurfewWidget
+      - path: SoberCurfew/Extensions/Color+Theme.swift
+      - path: SoberCurfew/Extensions/Double+BAC.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sobercurfew.app.widget
@@ -80,3 +82,8 @@ targets:
         INFOPLIST_FILE: SoberCurfewWidget/Info.plist
         DEVELOPMENT_TEAM: ""
         CODE_SIGN_STYLE: Automatic
+    entitlements:
+      path: SoberCurfewWidget/SoberCurfewWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.sobercurfew.app

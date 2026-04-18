@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-/// BAC impact on sleep quality relative to bedtime
 enum SleepImpact {
     case optimal    // sober well before bed, BAC < 0.04%
     case reduced    // sober before bed but low trace alcohol
@@ -26,39 +25,41 @@ enum SleepImpact {
 
 @Observable
 final class MetabolismManager {
-    // Standard Widmark elimination rate: 0.015 g/dL per hour
-    private let eliminationRate: Double = 0.015
 
-    // MARK: - Core BAC Calculation
+    // MARK: - Core BAC
 
-    /// Current estimated BAC using per-drink Widmark contributions
+    /// Current estimated BAC using a two-phase piecewise model per drink:
+    /// rising linearly over the absorption window, then decaying at the elimination rate.
     func currentBAC(drinks: [DrinkEntry], profile: UserProfile) -> Double {
-        let now = Date()
-        let weightGrams = profile.weightKg * 1000.0
-        let r = profile.biologicalSex.widmarkR
-
-        let total = drinks.reduce(0.0) { sum, drink in
-            let hours = now.timeIntervalSince(drink.timestamp) / 3600.0
-            guard hours >= 0 else { return sum }
-            // Widmark: BAC% = (A / (W × r)) × 100 − β × t
-            let raw = (drink.alcoholGrams / (weightGrams * r)) * 100.0
-            return sum + max(0, raw - eliminationRate * hours)
-        }
-
-        return max(0, total)
+        max(0, drinks.reduce(0.0) { $0 + contribution(of: $1, at: .now, profile: profile) })
     }
 
-    /// Time when BAC will reach 0.00% given current elimination trajectory
+    /// True while any logged drink is still within its absorption window (BAC still rising).
+    func isAbsorbing(drinks: [DrinkEntry]) -> Bool {
+        let now = Date()
+        return drinks.contains { drink in
+            let t = now.timeIntervalSince(drink.effectiveTimestamp) / 3600.0
+            return t >= 0 && t < drink.absorptionHours
+        }
+    }
+
+    // MARK: - ZeroLine
+
+    /// Scans forward in 5-minute steps to find when total BAC drops to zero.
     func timeToZero(drinks: [DrinkEntry], profile: UserProfile) -> Date? {
-        let bac = currentBAC(drinks: drinks, profile: profile)
-        guard bac > 0 else { return nil }
-        let hoursRemaining = bac / eliminationRate
-        return Date().addingTimeInterval(hoursRemaining * 3600)
+        guard currentBAC(drinks: drinks, profile: profile) > 0 else { return nil }
+        let step: TimeInterval = 300
+        var probe = Date()
+        for _ in 0..<(24 * 12) {
+            probe = probe.addingTimeInterval(step)
+            if bacAt(date: probe, drinks: drinks, profile: profile) <= 0 { return probe }
+        }
+        return nil
     }
 
     // MARK: - UI Helpers
 
-    /// Fraction of peak BAC remaining (0.0–1.0) — drives the gauge ring progress
+    /// Fraction of theoretical peak BAC currently in the blood (0.0–1.0).
     func bacProgress(drinks: [DrinkEntry], profile: UserProfile) -> Double {
         let current = currentBAC(drinks: drinks, profile: profile)
         let peak = peakBAC(drinks: drinks, profile: profile)
@@ -66,29 +67,35 @@ final class MetabolismManager {
         return min(1.0, current / peak)
     }
 
-    /// Predicted impact on sleep quality based on sobering window vs. bedtime
     func sleepImpact(drinks: [DrinkEntry], profile: UserProfile, bedtime: Date) -> SleepImpact {
-        guard let soberTime = timeToZero(drinks: drinks, profile: profile) else {
-            return .optimal
-        }
+        guard let soberTime = timeToZero(drinks: drinks, profile: profile) else { return .optimal }
         let bac = currentBAC(drinks: drinks, profile: profile)
-        if soberTime > bedtime {
-            return .disrupted
-        } else if bac >= 0.04 {
-            return .reduced
-        } else {
-            return .optimal
-        }
+        if soberTime > bedtime { return .disrupted }
+        return bac >= 0.04 ? .reduced : .optimal
     }
 
     // MARK: - Private
 
-    // Sum of all individual drink BAC contributions without elimination — represents theoretical peak
-    private func peakBAC(drinks: [DrinkEntry], profile: UserProfile) -> Double {
-        let weightGrams = profile.weightKg * 1000.0
-        let r = profile.biologicalSex.widmarkR
-        return drinks.reduce(0.0) { sum, drink in
-            sum + (drink.alcoholGrams / (weightGrams * r)) * 100.0
+    private func contribution(of drink: DrinkEntry, at date: Date, profile: UserProfile) -> Double {
+        let t = date.timeIntervalSince(drink.effectiveTimestamp) / 3600.0
+        guard t >= 0 else { return 0 }
+        let peak = (drink.alcoholGrams / profile.volumeOfDistribution) * 100.0
+        let tAbs = drink.absorptionHours
+        let beta = profile.toleranceLevel.eliminationRate
+        if t < tAbs {
+            return peak * (t / tAbs)                   // absorption phase — rising
+        } else {
+            return max(0, peak - beta * (t - tAbs))    // elimination phase — falling
         }
+    }
+
+    private func bacAt(date: Date, drinks: [DrinkEntry], profile: UserProfile) -> Double {
+        max(0, drinks.reduce(0.0) { $0 + contribution(of: $1, at: date, profile: profile) })
+    }
+
+    // Theoretical ceiling — sum of each drink's peak BAC, no elimination.
+    private func peakBAC(drinks: [DrinkEntry], profile: UserProfile) -> Double {
+        let vd = profile.volumeOfDistribution
+        return drinks.reduce(0.0) { $0 + ($1.alcoholGrams / vd) * 100.0 }
     }
 }

@@ -40,15 +40,21 @@ final class DrinkEntry {
     var name: String
     var category: DrinkCategory
     var volumeML: Double
-    var abv: Double           // 0.0–1.0 (e.g. 0.05 = 5%)
+    var abv: Double               // 0.0–1.0 (e.g. 0.05 = 5%)
     var timestamp: Date
+    var isCarbonated: Bool
+    var timestampOffsetSec: Int   // seconds subtracted from timestamp (retroactive logging)
+    var foodStateAtTime: FoodState
 
     init(
         name: String,
         category: DrinkCategory,
         volumeML: Double,
         abv: Double,
-        timestamp: Date = .now
+        timestamp: Date = .now,
+        isCarbonated: Bool = false,
+        timestampOffsetSec: Int = 0,
+        foodStateAtTime: FoodState = .light
     ) {
         self.id = UUID()
         self.name = name
@@ -56,14 +62,26 @@ final class DrinkEntry {
         self.volumeML = volumeML
         self.abv = abv
         self.timestamp = timestamp
+        self.isCarbonated = isCarbonated
+        self.timestampOffsetSec = timestampOffsetSec
+        self.foodStateAtTime = foodStateAtTime
     }
 
-    // Mass of pure ethanol in this drink (grams)
+    // Actual moment of consumption, accounting for retroactive offset
+    var effectiveTimestamp: Date {
+        timestamp.addingTimeInterval(-Double(timestampOffsetSec))
+    }
+
+    // Absorption window in hours, adjusted for carbonation
+    var absorptionHours: Double {
+        let base = foodStateAtTime.absorptionHours
+        return isCarbonated ? base * 0.75 : base
+    }
+
     var alcoholGrams: Double {
         volumeML * abv * 0.789
     }
 
-    // Number of US standard drinks (14g ethanol each)
     var standardDrinks: Double {
         alcoholGrams / 14.0
     }

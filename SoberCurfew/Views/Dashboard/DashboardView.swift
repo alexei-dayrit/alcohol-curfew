@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftData
 
+private let appGroupID = "group.com.sobercurfew.app"
+
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allDrinks: [DrinkEntry]
@@ -9,17 +11,16 @@ struct DashboardView: View {
     @State private var showAddDrink = false
     @State private var metabolism = MetabolismManager()
 
-    // Recalculated every 30 seconds via the timer
     @State private var currentBAC: Double = 0
     @State private var soberTime: Date?
     @State private var bacProgress: Double = 0
     @State private var sleepImpact: SleepImpact = .optimal
+    @State private var isAbsorbing: Bool = false
 
     private let refreshTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     private var profile: UserProfile { profiles.first ?? UserProfile() }
 
-    // Only drinks within the last 12 hours contribute to the current BAC window
     private var recentDrinks: [DrinkEntry] {
         let cutoff = Date().addingTimeInterval(-12 * 3600)
         return allDrinks.filter { $0.timestamp > cutoff }
@@ -29,17 +30,16 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    // ── Large tile: ZeroLine gauge ──────────────────────────
                     BentoCard(padding: 24) {
                         ZeroLineGaugeView(
                             bac: currentBAC,
                             progress: bacProgress,
-                            soberTime: soberTime
+                            soberTime: soberTime,
+                            isAbsorbing: isAbsorbing
                         )
                         .frame(height: 256)
                     }
 
-                    // ── Medium row: Sleep Impact + Quick Log ────────────────
                     HStack(alignment: .top, spacing: 12) {
                         SleepImpactTile(impact: sleepImpact, soberTime: soberTime)
                             .frame(maxWidth: .infinity)
@@ -51,13 +51,16 @@ struct DashboardView: View {
                         .frame(width: 110)
                     }
 
-                    // ── Stat tiles ──────────────────────────────────────────
+                    if isAbsorbing {
+                        absorbingBanner
+                    }
+
                     HStack(spacing: 12) {
                         StatTile(
                             label: "LAST DRINK",
                             value: recentDrinks.first?.name ?? "—",
                             subtitle: recentDrinks.first.map {
-                                $0.timestamp.formatted(date: .omitted, time: .shortened)
+                                $0.effectiveTimestamp.formatted(date: .omitted, time: .shortened)
                             }
                         )
                         StatTile(
@@ -82,7 +85,6 @@ struct DashboardView: View {
                         )
                     }
 
-                    // ── Safety footer ───────────────────────────────────────
                     Text("ESTIMATES ONLY · NEVER DRIVE UNDER THE INFLUENCE")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundColor(.textSecondary.opacity(0.5))
@@ -141,6 +143,27 @@ struct DashboardView: View {
         }
     }
 
+    private var absorbingBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.up.circle.fill")
+                .font(.system(size: 13))
+                .foregroundColor(.accentAmber)
+            Text("Still absorbing · BAC still rising")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.accentAmber)
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.accentAmber.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.accentAmber.opacity(0.25), lineWidth: 1)
+        )
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
     // MARK: - Helpers
 
     private func refreshBAC() {
@@ -152,6 +175,15 @@ struct DashboardView: View {
             profile: profile,
             bedtime: profile.bedtimeDate
         )
+        isAbsorbing = metabolism.isAbsorbing(drinks: recentDrinks)
+        writeToAppGroup()
+    }
+
+    private func writeToAppGroup() {
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
+        defaults.set(currentBAC, forKey: "bac")
+        defaults.set(soberTime?.timeIntervalSince1970 ?? 0, forKey: "soberTime")
+        defaults.set(sleepImpact.widgetImpactKey, forKey: "impact")
     }
 
     private func countdownLabel(_ date: Date) -> String {
@@ -160,5 +192,15 @@ struct DashboardView: View {
         let h = Int(secs) / 3600
         let m = (Int(secs) % 3600) / 60
         return h > 0 ? "in \(h)h \(m)m" : "in \(m)m"
+    }
+}
+
+private extension SleepImpact {
+    var widgetImpactKey: String {
+        switch self {
+        case .optimal:   return "optimal"
+        case .reduced:   return "reduced"
+        case .disrupted: return "disrupted"
+        }
     }
 }

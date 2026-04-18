@@ -8,11 +8,18 @@ struct ProfileView: View {
     @State private var healthKit = HealthKitManager()
     @State private var saved = false
 
-    // Local editing state
+    // Basic physiology
     @State private var weightLbs: Double = 175
     @State private var selectedSex: BiologicalSex = .male
     @State private var bedtimeDate = defaultBedtime()
     @State private var healthKitEnabled = false
+
+    // Ultra calibration
+    @State private var heightCm: Double = 170
+    @State private var age: Int = 30
+    @State private var bodyComposition: BodyComposition = .average
+    @State private var toleranceLevel: ToleranceLevel = .standard
+    @State private var sessionFoodState: FoodState = .light
 
     private var profile: UserProfile? { profiles.first }
 
@@ -20,6 +27,7 @@ struct ProfileView: View {
         ScrollView {
             VStack(spacing: 16) {
                 physiologyCard
+                ultraCalibrationCard
                 bedtimeCard
                 healthKitCard
                 saveButton
@@ -47,14 +55,12 @@ struct ProfileView: View {
         BentoCard {
             VStack(alignment: .leading, spacing: 16) {
                 sectionHeader("PERSONAL PHYSIOLOGY")
-
-                Text("These values personalize your Widmark BAC calculation.")
+                Text("These values personalize your BAC calculation.")
                     .font(.system(size: 13))
                     .foregroundColor(.textSecondary)
 
                 divider
 
-                // Weight slider
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         sectionHeader("BODY WEIGHT")
@@ -69,7 +75,6 @@ struct ProfileView: View {
 
                 divider
 
-                // Biological sex toggle
                 VStack(alignment: .leading, spacing: 10) {
                     sectionHeader("BIOLOGICAL SEX")
                     HStack(spacing: 8) {
@@ -88,6 +93,92 @@ struct ProfileView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                             .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var ultraCalibrationCard: some View {
+        BentoCard {
+            VStack(alignment: .leading, spacing: 16) {
+                sectionHeader("ULTRA CALIBRATION")
+                Text("Enables the Watson formula for more accurate volume of distribution. Optional but recommended.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.textSecondary)
+
+                divider
+
+                // Height
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        sectionHeader("HEIGHT")
+                        Spacer()
+                        Text(heightCm > 0 ? "\(Int(heightCm)) cm  ·  \(heightFtIn)" : "Not set")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(heightCm > 0 ? .white : .textSecondary)
+                    }
+                    Slider(value: $heightCm, in: 120...220, step: 1)
+                        .tint(.accentAmber)
+                }
+
+                divider
+
+                // Age
+                HStack {
+                    sectionHeader("AGE")
+                    Spacer()
+                    Stepper("\(age > 0 ? "\(age) yrs" : "Not set")", value: $age, in: 0...100)
+                        .fixedSize()
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                }
+
+                divider
+
+                // Body composition
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionHeader("BODY COMPOSITION")
+                    HStack(spacing: 8) {
+                        ForEach(BodyComposition.allCases, id: \.self) { option in
+                            selectionButton(
+                                label: option.rawValue,
+                                isSelected: bodyComposition == option
+                            ) { bodyComposition = option }
+                        }
+                    }
+                }
+
+                divider
+
+                // Tolerance
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionHeader("METABOLIC TOLERANCE")
+                    HStack(spacing: 8) {
+                        ForEach(ToleranceLevel.allCases, id: \.self) { option in
+                            selectionButton(
+                                label: option.rawValue,
+                                isSelected: toleranceLevel == option
+                            ) { toleranceLevel = option }
+                        }
+                    }
+                }
+
+                divider
+
+                // Session food state
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionHeader("SESSION FOOD STATE")
+                    Text("Default stomach contents when logging a drink this session.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.textSecondary)
+                    HStack(spacing: 8) {
+                        ForEach(FoodState.allCases, id: \.self) { option in
+                            selectionButton(
+                                label: "\(option.icon) \(option.rawValue)",
+                                isSelected: sessionFoodState == option
+                            ) { sessionFoodState = option }
                         }
                     }
                 }
@@ -198,16 +289,42 @@ struct ProfileView: View {
             .tracking(1.5)
     }
 
+    @ViewBuilder
+    private func selectionButton(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(isSelected ? .black : .textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(isSelected ? Color.accentAmber : Color.cardBackgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var divider: some View {
         Divider().background(Color.white.opacity(0.08))
+    }
+
+    private var heightFtIn: String {
+        let totalInches = heightCm / 2.54
+        let feet = Int(totalInches) / 12
+        let inches = Int(totalInches) % 12
+        return "\(feet)'\(inches)\""
     }
 
     private func loadProfile() {
         guard let p = profile else { return }
         weightLbs = p.weightLbs
         selectedSex = p.biologicalSex
-        bedtimeDate = bedtimeDateFrom(hour: p.bedtimeHour, minute: p.bedtimeMinute)
+        bedtimeDate = Self.bedtimeDateFrom(hour: p.bedtimeHour, minute: p.bedtimeMinute)
         healthKitEnabled = p.healthKitEnabled
+        heightCm = p.heightCm
+        age = p.age
+        bodyComposition = p.bodyComposition
+        toleranceLevel = p.toleranceLevel
+        sessionFoodState = p.sessionFoodState
     }
 
     private func saveProfile() {
@@ -218,6 +335,11 @@ struct ProfileView: View {
             existing.bedtimeHour = bedComponents.hour ?? 23
             existing.bedtimeMinute = bedComponents.minute ?? 0
             existing.healthKitEnabled = healthKitEnabled
+            existing.heightCm = heightCm
+            existing.age = age
+            existing.bodyComposition = bodyComposition
+            existing.toleranceLevel = toleranceLevel
+            existing.sessionFoodState = sessionFoodState
         } else {
             let p = UserProfile()
             p.weightLbs = weightLbs
@@ -226,6 +348,11 @@ struct ProfileView: View {
             p.bedtimeMinute = bedComponents.minute ?? 0
             p.healthKitEnabled = healthKitEnabled
             p.hasAcceptedDisclaimer = true
+            p.heightCm = heightCm
+            p.age = age
+            p.bodyComposition = bodyComposition
+            p.toleranceLevel = toleranceLevel
+            p.sessionFoodState = sessionFoodState
             modelContext.insert(p)
         }
         withAnimation(.spring()) { saved = true }

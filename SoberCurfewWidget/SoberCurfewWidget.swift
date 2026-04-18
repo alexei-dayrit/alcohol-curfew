@@ -2,6 +2,8 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
+private let appGroupID = "group.com.sobercurfew.app"
+
 // MARK: - Timeline Entry
 
 struct CurfewEntry: TimelineEntry {
@@ -19,6 +21,15 @@ struct CurfewEntry: TimelineEntry {
             case .optimal:   return .sleepGreen
             case .reduced:   return .sleepYellow
             case .disrupted: return .sleepRed
+            }
+        }
+
+        static func from(key: String) -> WidgetImpact {
+            switch key {
+            case "optimal":   return .optimal
+            case "reduced":   return .reduced
+            case "disrupted": return .disrupted
+            default:          return .clear
             }
         }
     }
@@ -44,14 +55,19 @@ struct CurfewProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CurfewEntry>) -> Void) {
         let entry = buildEntry()
-        // Refresh every 15 minutes; WidgetKit may defer based on battery/budget
         let nextUpdate = Date().addingTimeInterval(900)
         completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
-    // In production, load from a shared App Group container.
-    // Returning .clear here as a safe default until App Group is wired up.
-    private func buildEntry() -> CurfewEntry { .clear }
+    private func buildEntry() -> CurfewEntry {
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return .clear }
+        let bac = defaults.double(forKey: "bac")
+        let soberInterval = defaults.double(forKey: "soberTime")
+        let soberTime = soberInterval > 0 ? Date(timeIntervalSince1970: soberInterval) : nil
+        let impactKey = defaults.string(forKey: "impact") ?? "clear"
+        let impact = CurfewEntry.WidgetImpact.from(key: impactKey)
+        return CurfewEntry(date: .now, bac: bac, soberTime: soberTime, impact: impact)
+    }
 }
 
 // MARK: - Widget Views
