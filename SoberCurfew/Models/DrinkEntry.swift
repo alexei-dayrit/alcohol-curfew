@@ -36,15 +36,15 @@ struct PresetDrink: Identifiable {
 
 @Model
 final class DrinkEntry {
-    var id: UUID
-    var name: String
-    var category: DrinkCategory
-    var volumeML: Double
-    var abv: Double               // 0.0–1.0 (e.g. 0.05 = 5%)
-    var timestamp: Date
-    var isCarbonated: Bool
-    var timestampOffsetSec: Int   // seconds subtracted from timestamp (retroactive logging)
-    var foodStateAtTime: FoodState
+    var id: UUID = UUID()
+    var name: String = ""
+    var category: DrinkCategory = DrinkCategory.custom
+    var volumeML: Double = 0
+    var abv: Double = 0           // 0.0–1.0 (e.g. 0.05 = 5%)
+    var timestamp: Date = Date()
+    var isCarbonated: Bool = false
+    var timestampOffsetSec: Int = 0
+    var foodStateAtTime: FoodState = FoodState.light
 
     init(
         name: String,

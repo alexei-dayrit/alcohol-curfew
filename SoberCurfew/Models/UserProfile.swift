@@ -67,19 +67,19 @@ enum FoodState: String, Codable, CaseIterable {
 
 @Model
 final class UserProfile {
-    var weightKg: Double
-    var biologicalSex: BiologicalSex
-    var bedtimeHour: Int
-    var bedtimeMinute: Int
-    var hasAcceptedDisclaimer: Bool
-    var healthKitEnabled: Bool
+    var weightKg: Double = 79.4
+    var biologicalSex: BiologicalSex = BiologicalSex.male
+    var bedtimeHour: Int = 23
+    var bedtimeMinute: Int = 0
+    var hasAcceptedDisclaimer: Bool = false
+    var healthKitEnabled: Bool = false
 
     // Ultra calibration fields — optional; Watson formula used when both present
-    var heightCm: Double
-    var age: Int
-    var bodyComposition: BodyComposition
-    var toleranceLevel: ToleranceLevel
-    var sessionFoodState: FoodState
+    var heightCm: Double = 0
+    var age: Int = 0
+    var bodyComposition: BodyComposition = BodyComposition.average
+    var toleranceLevel: ToleranceLevel = ToleranceLevel.standard
+    var sessionFoodState: FoodState = FoodState.light
 
     init(
         weightKg: Double = 79.4,
