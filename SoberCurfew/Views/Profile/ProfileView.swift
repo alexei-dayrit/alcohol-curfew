@@ -5,7 +5,8 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var profiles: [UserProfile]
 
-    @State private var healthKit = HealthKitManager()
+    @Environment(HealthKitManager.self) private var healthKit
+    @Environment(NotificationManager.self) private var notifications
     @State private var saved = false
 
     // Basic physiology
@@ -21,6 +22,10 @@ struct ProfileView: View {
     @State private var toleranceLevel: ToleranceLevel = .standard
     @State private var sessionFoodState: FoodState = .light
 
+    // Hydration reminders
+    @State private var hydrationRemindersEnabled = false
+    @State private var hydrationReminderIntervalMinutes = 30
+
     private var profile: UserProfile? { profiles.first }
 
     var body: some View {
@@ -30,6 +35,7 @@ struct ProfileView: View {
                 ultraCalibrationCard
                 bedtimeCard
                 healthKitCard
+                hydrationCard
                 saveButton
 
                 Text("ESTIMATES ONLY · NEVER DRIVE UNDER THE INFLUENCE")
@@ -248,6 +254,48 @@ struct ProfileView: View {
         }
     }
 
+    private var hydrationCard: some View {
+        BentoCard {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("HYDRATION REMINDERS")
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Remind me to hydrate")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                        Text("Sends a notification while BAC is above zero.")
+                            .font(.system(size: 12))
+                            .foregroundColor(.textSecondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $hydrationRemindersEnabled)
+                        .tint(.accentAmber)
+                        .onChange(of: hydrationRemindersEnabled) { _, enabled in
+                            if enabled {
+                                Task { await notifications.requestAuthorization() }
+                            }
+                        }
+                }
+
+                if hydrationRemindersEnabled {
+                    divider
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionHeader("REMINDER INTERVAL")
+                        HStack(spacing: 8) {
+                            ForEach([15, 30, 45, 60], id: \.self) { minutes in
+                                selectionButton(
+                                    label: "\(minutes)m",
+                                    isSelected: hydrationReminderIntervalMinutes == minutes
+                                ) { hydrationReminderIntervalMinutes = minutes }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var saveButton: some View {
         Button(action: saveProfile) {
             Text("Save Profile")
@@ -325,6 +373,8 @@ struct ProfileView: View {
         bodyComposition = p.bodyComposition
         toleranceLevel = p.toleranceLevel
         sessionFoodState = p.sessionFoodState
+        hydrationRemindersEnabled = p.hydrationRemindersEnabled
+        hydrationReminderIntervalMinutes = p.hydrationReminderIntervalMinutes
     }
 
     private func saveProfile() {
@@ -340,6 +390,8 @@ struct ProfileView: View {
             existing.bodyComposition = bodyComposition
             existing.toleranceLevel = toleranceLevel
             existing.sessionFoodState = sessionFoodState
+            existing.hydrationRemindersEnabled = hydrationRemindersEnabled
+            existing.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
         } else {
             let p = UserProfile()
             p.weightLbs = weightLbs
@@ -353,6 +405,8 @@ struct ProfileView: View {
             p.bodyComposition = bodyComposition
             p.toleranceLevel = toleranceLevel
             p.sessionFoodState = sessionFoodState
+            p.hydrationRemindersEnabled = hydrationRemindersEnabled
+            p.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
             modelContext.insert(p)
         }
         withAnimation(.spring()) { saved = true }
