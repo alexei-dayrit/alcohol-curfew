@@ -5,6 +5,8 @@ private let appGroupID = "group.com.sobercurfew.app"
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(HealthKitManager.self) private var healthKit
+    @Environment(NotificationManager.self) private var notifications
     @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allDrinks: [DrinkEntry]
     @Query private var profiles: [UserProfile]
 
@@ -177,6 +179,14 @@ struct DashboardView: View {
         )
         isAbsorbing = metabolism.isAbsorbing(drinks: recentDrinks)
         writeToAppGroup()
+        if profile.healthKitEnabled {
+            Task { await healthKit.writeBACSample(currentBAC) }
+        }
+        if profile.hydrationRemindersEnabled && currentBAC > 0 {
+            notifications.scheduleHydrationReminder(in: profile.hydrationReminderIntervalMinutes)
+        } else {
+            notifications.cancelHydrationReminders()
+        }
     }
 
     private func writeToAppGroup() {

@@ -19,7 +19,9 @@
 | **Ultra Calibration Card in Profile** | **NEW** — Height slider (cm + ft/in display), age stepper, body composition (Athletic/Average/Sedentary), tolerance level, session food state. |
 | ZeroLine Countdown | Animated ring, updates every 30 s, forward-scan `timeToZero` (5 min steps) correctly handles still-absorbing drinks |
 | Drink Logging | 6 presets + manual entry, all persisted to SwiftData with new fields |
-| HealthKit Sync | Reads weight + biological sex, writes BAC samples |
+| HealthKit Sync | Reads weight + biological sex; writes BAC samples on every `refreshBAC()` call when enabled |
+| **HealthKit BAC Write** | **NEW** — `writeBACSample()` now called from `DashboardView.refreshBAC()` whenever `profile.healthKitEnabled`. `HealthKitManager` lifted to app-level `@Environment` object. |
+| **Hydration Reminders** | **NEW** — `NotificationManager` with rolling `UNUserNotificationCenter` scheduling. Reminder fires N minutes after last check if BAC > 0; auto-cancelled when BAC clears. Interval (15/30/45/60 min) + enabled toggle in Profile, persisted to `UserProfile`. |
 | Disclaimer Gate | First-launch gate on `hasAcceptedDisclaimer` |
 | Dashboard / Bento Grid | All stat tiles show real data; last drink uses `effectiveTimestamp` |
 | Sleep Impact Score | 3-tier logic (optimal / reduced / disrupted) wired to bedtime + BAC |
@@ -36,8 +38,6 @@
 
 | Feature | Status | What's Missing |
 | --- | --- | --- |
-| Hydration Reminders | Not started | No `UserNotifications` integration, no scheduling logic |
-| HealthKit BAC Write | Wired but not called | `writeBACSample()` exists in `HealthKitManager` but is never invoked after a drink is logged |
 | Watch App Absorbing State | Not shown | Watch `WatchView` doesn't display the ascending limb indicator (low priority) |
 
 ---
@@ -74,7 +74,8 @@ All new `@Model` fields have **inline default values with fully qualified type n
 - Test HealthKit read/write on real device (simulator won't work)
 - Test CloudKit sync between iPhone and Watch
 - Verify widget renders live BAC (App Group now wired — should work after first refresh)
-- Wire `writeBACSample()` call after drink is logged
+- ~~Wire `writeBACSample()` call after drink is logged~~ ✅ Done — fires from `DashboardView.refreshBAC()`
 - QA Quick mode with all 4 categories, 3 sizes, 4 time offsets
 - QA Ultra mode: carbonated toggle, food state override, manual entry
 - QA Profile Ultra Calibration: Watson vs Widmark path (with/without height+age)
+- QA Hydration Reminders: enable in Profile → log drink → background app → confirm notification fires at selected interval; confirm no notification fires after BAC clears

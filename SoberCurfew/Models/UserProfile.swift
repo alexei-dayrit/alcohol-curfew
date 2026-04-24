@@ -81,6 +81,10 @@ final class UserProfile {
     var toleranceLevel: ToleranceLevel = ToleranceLevel.standard
     var sessionFoodState: FoodState = FoodState.light
 
+    // Hydration reminder preferences
+    var hydrationRemindersEnabled: Bool = false
+    var hydrationReminderIntervalMinutes: Int = 30
+
     init(
         weightKg: Double = 79.4,
         biologicalSex: BiologicalSex = .male,
@@ -92,7 +96,9 @@ final class UserProfile {
         age: Int = 0,
         bodyComposition: BodyComposition = .average,
         toleranceLevel: ToleranceLevel = .standard,
-        sessionFoodState: FoodState = .light
+        sessionFoodState: FoodState = .light,
+        hydrationRemindersEnabled: Bool = false,
+        hydrationReminderIntervalMinutes: Int = 30
     ) {
         self.weightKg = weightKg
         self.biologicalSex = biologicalSex
@@ -105,6 +111,8 @@ final class UserProfile {
         self.bodyComposition = bodyComposition
         self.toleranceLevel = toleranceLevel
         self.sessionFoodState = sessionFoodState
+        self.hydrationRemindersEnabled = hydrationRemindersEnabled
+        self.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
     }
 
     var weightLbs: Double {
