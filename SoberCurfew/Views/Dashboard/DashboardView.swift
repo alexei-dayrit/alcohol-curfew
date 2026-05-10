@@ -25,7 +25,7 @@ struct DashboardView: View {
 
     private var recentDrinks: [DrinkEntry] {
         let cutoff = Date().addingTimeInterval(-12 * 3600)
-        return allDrinks.filter { $0.timestamp > cutoff }
+        return allDrinks.filter { $0.effectiveTimestamp > cutoff }
     }
 
     var body: some View {
@@ -179,11 +179,11 @@ struct DashboardView: View {
         )
         isAbsorbing = metabolism.isAbsorbing(drinks: recentDrinks)
         writeToAppGroup()
-        if profile.healthKitEnabled {
+        if profile.healthKitEnabled && currentBAC > 0 {
             Task { await healthKit.writeBACSample(currentBAC) }
         }
         if profile.hydrationRemindersEnabled && currentBAC > 0 {
-            notifications.scheduleHydrationReminder(in: profile.hydrationReminderIntervalMinutes)
+            Task { await notifications.scheduleHydrationReminder(in: profile.hydrationReminderIntervalMinutes) }
         } else {
             notifications.cancelHydrationReminders()
         }

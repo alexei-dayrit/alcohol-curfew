@@ -2,6 +2,7 @@ import Foundation
 import UserNotifications
 import Observation
 
+@MainActor
 @Observable
 final class NotificationManager {
     private(set) var isAuthorized = false
@@ -22,10 +23,11 @@ final class NotificationManager {
         }
     }
 
-    func scheduleHydrationReminder(in minutes: Int) {
+    func scheduleHydrationReminder(in minutes: Int) async {
         guard isAuthorized else { return }
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [hydrationID])
+        let pending = await center.pendingNotificationRequests()
+        guard !pending.contains(where: { $0.identifier == hydrationID }) else { return }
 
         let content = UNMutableNotificationContent()
         content.title = "Stay Hydrated 💧"
@@ -41,7 +43,7 @@ final class NotificationManager {
             content: content,
             trigger: trigger
         )
-        center.add(request)
+        try? await center.add(request)
     }
 
     func cancelHydrationReminders() {

@@ -9,7 +9,7 @@ struct SleepCurfewView: View {
     private var profile: UserProfile { profiles.first ?? UserProfile() }
 
     private var recentDrinks: [DrinkEntry] {
-        allDrinks.filter { $0.timestamp > Date().addingTimeInterval(-12 * 3600) }
+        allDrinks.filter { $0.effectiveTimestamp > Date().addingTimeInterval(-12 * 3600) }
     }
 
     private var currentBAC: Double {

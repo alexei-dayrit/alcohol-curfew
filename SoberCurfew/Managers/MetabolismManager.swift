@@ -50,7 +50,7 @@ final class MetabolismManager {
         guard currentBAC(drinks: drinks, profile: profile) > 0 else { return nil }
         let step: TimeInterval = 300
         var probe = Date()
-        for _ in 0..<(24 * 12) {
+        for _ in 0..<(48 * 12) {
             probe = probe.addingTimeInterval(step)
             if bacAt(date: probe, drinks: drinks, profile: profile) <= 0 { return probe }
         }
@@ -69,9 +69,9 @@ final class MetabolismManager {
 
     func sleepImpact(drinks: [DrinkEntry], profile: UserProfile, bedtime: Date) -> SleepImpact {
         guard let soberTime = timeToZero(drinks: drinks, profile: profile) else { return .optimal }
-        let bac = currentBAC(drinks: drinks, profile: profile)
         if soberTime > bedtime { return .disrupted }
-        return bac >= 0.04 ? .reduced : .optimal
+        let bacAtBed = bacAt(date: bedtime, drinks: drinks, profile: profile)
+        return bacAtBed >= 0.04 ? .reduced : .optimal
     }
 
     // MARK: - Private

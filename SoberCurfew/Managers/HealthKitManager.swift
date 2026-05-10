@@ -2,12 +2,19 @@ import Foundation
 import HealthKit
 import Observation
 
+@MainActor
 @Observable
 final class HealthKitManager {
     var isAuthorized = false
     var errorMessage: String?
 
     private let store = HKHealthStore()
+    private var lastWrittenBAC: Double = -1
+    private var lastWriteDate: Date = .distantPast
+
+    private var bacQuantityType: HKQuantityType? {
+        HKObjectType.quantityType(forIdentifier: .bloodAlcoholContent)
+    }
 
     private var readTypes: Set<HKObjectType> {
         var types = Set<HKObjectType>()
@@ -22,7 +29,7 @@ final class HealthKitManager {
 
     private var writeTypes: Set<HKSampleType> {
         var types = Set<HKSampleType>()
-        if let bac = HKObjectType.quantityType(forIdentifier: .bloodAlcoholContent) {
+        if let bac = bacQuantityType {
             types.insert(bac)
         }
         return types
@@ -33,9 +40,10 @@ final class HealthKitManager {
             errorMessage = "HealthKit is not available on this device."
             return
         }
+        guard let bacType = bacQuantityType else { return }
         do {
             try await store.requestAuthorization(toShare: writeTypes, read: readTypes)
-            isAuthorized = true
+            isAuthorized = store.authorizationStatus(for: bacType) == .sharingAuthorized
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -68,10 +76,14 @@ final class HealthKitManager {
     }
 
     func writeBACSample(_ bac: Double, date: Date = .now) async {
-        guard let bacType = HKObjectType.quantityType(forIdentifier: .bloodAlcoholContent) else { return }
-        // HealthKit expects BAC as a fraction (0.0–1.0), not a percentage
-        let quantity = HKQuantity(unit: .percent(), doubleValue: bac / 100.0)
+        guard isAuthorized else { return }
+        guard bac > 0 else { return }
+        guard abs(bac - lastWrittenBAC) > 0.002 || date.timeIntervalSince(lastWriteDate) >= 300 else { return }
+        guard let bacType = bacQuantityType else { return }
+        let quantity = HKQuantity(unit: .percent(), doubleValue: bac)
         let sample = HKQuantitySample(type: bacType, quantity: quantity, start: date, end: date)
         try? await store.save(sample)
+        lastWrittenBAC = bac
+        lastWriteDate = date
     }
 }
