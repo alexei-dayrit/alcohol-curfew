@@ -3,7 +3,7 @@ import SwiftData
 
 struct SleepCurfewView: View {
     @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allDrinks: [DrinkEntry]
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
     @State private var metabolism = MetabolismManager()
 
     private var profile: UserProfile { profiles.first ?? UserProfile() }

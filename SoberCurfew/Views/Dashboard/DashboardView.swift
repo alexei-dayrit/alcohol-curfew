@@ -9,7 +9,7 @@ struct DashboardView: View {
     @Environment(HealthKitManager.self) private var healthKit
     @Environment(NotificationManager.self) private var notifications
     @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allDrinks: [DrinkEntry]
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
 
     @State private var showAddDrink = false
     @State private var metabolism = MetabolismManager()

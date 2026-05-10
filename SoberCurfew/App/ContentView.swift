@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
 
     // Driven by the disclaimer acceptance in SwiftData
     private var disclaimerAccepted: Bool {

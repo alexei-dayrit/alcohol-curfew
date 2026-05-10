@@ -3,7 +3,7 @@ import SwiftData
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
 
     @Environment(HealthKitManager.self) private var healthKit
     @Environment(NotificationManager.self) private var notifications
@@ -379,35 +379,19 @@ struct ProfileView: View {
 
     private func saveProfile() {
         let bedComponents = Calendar.current.dateComponents([.hour, .minute], from: bedtimeDate)
-        if let existing = profile {
-            existing.weightLbs = weightLbs
-            existing.biologicalSex = selectedSex
-            existing.bedtimeHour = bedComponents.hour ?? 23
-            existing.bedtimeMinute = bedComponents.minute ?? 0
-            existing.healthKitEnabled = healthKitEnabled
-            existing.heightCm = heightCm
-            existing.age = age
-            existing.bodyComposition = bodyComposition
-            existing.toleranceLevel = toleranceLevel
-            existing.sessionFoodState = sessionFoodState
-            existing.hydrationRemindersEnabled = hydrationRemindersEnabled
-            existing.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
-        } else {
-            let p = UserProfile()
-            p.weightLbs = weightLbs
-            p.biologicalSex = selectedSex
-            p.bedtimeHour = bedComponents.hour ?? 23
-            p.bedtimeMinute = bedComponents.minute ?? 0
-            p.healthKitEnabled = healthKitEnabled
-            p.heightCm = heightCm
-            p.age = age
-            p.bodyComposition = bodyComposition
-            p.toleranceLevel = toleranceLevel
-            p.sessionFoodState = sessionFoodState
-            p.hydrationRemindersEnabled = hydrationRemindersEnabled
-            p.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
-            modelContext.insert(p)
-        }
+        let p = UserProfile.fetchOrCreate(in: modelContext)
+        p.weightLbs = weightLbs
+        p.biologicalSex = selectedSex
+        p.bedtimeHour = bedComponents.hour ?? 23
+        p.bedtimeMinute = bedComponents.minute ?? 0
+        p.healthKitEnabled = healthKitEnabled
+        p.heightCm = heightCm
+        p.age = age
+        p.bodyComposition = bodyComposition
+        p.toleranceLevel = toleranceLevel
+        p.sessionFoodState = sessionFoodState
+        p.hydrationRemindersEnabled = hydrationRemindersEnabled
+        p.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
         withAnimation(.spring()) { saved = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { saved = false }

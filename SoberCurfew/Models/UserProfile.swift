@@ -67,6 +67,7 @@ enum FoodState: String, Codable, CaseIterable {
 
 @Model
 final class UserProfile {
+    var createdAt: Date = Date()
     var weightKg: Double = 79.4
     var biologicalSex: BiologicalSex = BiologicalSex.male
     var bedtimeHour: Int = 23
@@ -86,6 +87,7 @@ final class UserProfile {
     var hydrationReminderIntervalMinutes: Int = 30
 
     init(
+        createdAt: Date = Date(),
         weightKg: Double = 79.4,
         biologicalSex: BiologicalSex = .male,
         bedtimeHour: Int = 23,
@@ -100,6 +102,7 @@ final class UserProfile {
         hydrationRemindersEnabled: Bool = false,
         hydrationReminderIntervalMinutes: Int = 30
     ) {
+        self.createdAt = createdAt
         self.weightKg = weightKg
         self.biologicalSex = biologicalSex
         self.bedtimeHour = bedtimeHour
@@ -113,6 +116,15 @@ final class UserProfile {
         self.sessionFoodState = sessionFoodState
         self.hydrationRemindersEnabled = hydrationRemindersEnabled
         self.hydrationReminderIntervalMinutes = hydrationReminderIntervalMinutes
+    }
+
+    static func fetchOrCreate(in context: ModelContext) -> UserProfile {
+        let descriptor = FetchDescriptor<UserProfile>(sortBy: [SortDescriptor(\.createdAt)])
+        let existing = (try? context.fetch(descriptor)) ?? []
+        if let profile = existing.first { return profile }
+        let profile = UserProfile()
+        context.insert(profile)
+        return profile
     }
 
     var weightLbs: Double {
