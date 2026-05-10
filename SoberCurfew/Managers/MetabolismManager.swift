@@ -93,9 +93,18 @@ final class MetabolismManager {
         max(0, drinks.reduce(0.0) { $0 + contribution(of: $1, at: date, profile: profile) })
     }
 
-    // Theoretical ceiling — sum of each drink's peak BAC, no elimination.
+    // True peak — scan forward in 5-minute steps from first drink to find highest combined BAC.
     private func peakBAC(drinks: [DrinkEntry], profile: UserProfile) -> Double {
-        let vd = profile.volumeOfDistribution
-        return drinks.reduce(0.0) { $0 + ($1.alcoholGrams / vd) * 100.0 }
+        guard let start = drinks.map(\.effectiveTimestamp).min() else { return 0 }
+        let step: TimeInterval = 300
+        var peak = 0.0
+        var probe = start
+        for _ in 0..<(48 * 12) {
+            let bac = bacAt(date: probe, drinks: drinks, profile: profile)
+            if bac > peak { peak = bac }
+            probe = probe.addingTimeInterval(step)
+            if bac <= 0 && probe > Date() { break }
+        }
+        return peak
     }
 }
