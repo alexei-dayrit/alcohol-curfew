@@ -16,7 +16,8 @@ Generated from 6-section codebase review. Organized by priority.
 ### 2. Watch app data is always empty — no CloudKit/App Group entitlement on Watch target
 **File:** `SoberCurfewWatch/WatchApp.swift`, `SoberCurfewWatch/SoberCurfewWatch.entitlements`  
 The Watch target's `ModelConfiguration` stores in its own sandbox with no App Group or CloudKit container. `SoberCurfewWatch.entitlements` only declares HealthKit — no `com.apple.developer.icloud-container-identifiers` or `com.apple.security.application-groups`. SwiftData CloudKit sync will never replicate to the Watch. Every computation runs against an empty store with default profile values (79.4 kg male).  
-**Fix:** Add the iCloud container entitlement to the Watch target and construct its `ModelConfiguration` with `cloudKitDatabase: .automatic` matching the main app — or pivot to WatchConnectivity to push a data snapshot from the phone.
+**Fix:** Add the iCloud container entitlement to the Watch target and construct its `ModelConfiguration` with `cloudKitDatabase: .automatic` matching the main app — or pivot to WatchConnectivity to push a data snapshot from the phone.  
+**Status:** Code done — entitlements and `ModelConfiguration` updated. ⚠️ **Manual step pending:** In Xcode → Watch target → Signing & Capabilities → enable iCloud capability and add `iCloud.com.sobercurfew.app` container.
 
 ---
 
