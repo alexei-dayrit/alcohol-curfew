@@ -13,7 +13,7 @@ final class NotificationManager {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .notDetermined else {
-            isAuthorized = settings.authorizationStatus == .authorized
+            isAuthorized = [.authorized, .provisional].contains(settings.authorizationStatus)
             return
         }
         do {
