@@ -88,7 +88,7 @@ struct WatchView: View {
                 pulseOpacity = 0.45
             }
         } else {
-            withAnimation(.default) { pulseOpacity = 1.0 }
+            withAnimation(nil) { pulseOpacity = 1.0 }
         }
     }
 }
