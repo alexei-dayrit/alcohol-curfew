@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 private let appGroupID = "group.com.sobercurfew.app"
 
@@ -195,6 +196,7 @@ struct DashboardView: View {
         defaults.set(currentBAC, forKey: "bac")
         defaults.set(soberTime?.timeIntervalSince1970 ?? 0, forKey: "soberTime")
         defaults.set(sleepImpact.widgetImpactKey, forKey: "impact")
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func countdownLabel(_ date: Date) -> String {
