@@ -76,6 +76,7 @@ struct AddDrinkView: View {
     @State private var quickCategory: DrinkCategory = .beer
     @State private var quickSize: QuickSize = .medium
     @State private var quickOffsetSeconds: Int = 0
+    @State private var isLogging = false
 
     private var profile: UserProfile { profiles.first ?? UserProfile() }
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
@@ -361,7 +362,11 @@ struct AddDrinkView: View {
             }
 
             // Log button
-            Button(action: addQuickDrink) {
+            Button {
+                guard !isLogging else { return }
+                isLogging = true
+                addQuickDrink()
+            } label: {
                 Text("LOG IT")
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.black)
