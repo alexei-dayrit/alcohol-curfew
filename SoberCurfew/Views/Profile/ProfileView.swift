@@ -399,7 +399,6 @@ struct ProfileView: View {
             p.bedtimeHour = bedComponents.hour ?? 23
             p.bedtimeMinute = bedComponents.minute ?? 0
             p.healthKitEnabled = healthKitEnabled
-            p.hasAcceptedDisclaimer = true
             p.heightCm = heightCm
             p.age = age
             p.bodyComposition = bodyComposition
