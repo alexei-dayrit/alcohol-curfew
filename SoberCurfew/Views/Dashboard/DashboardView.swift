@@ -113,11 +113,12 @@ struct DashboardView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAddDrink, onDismiss: refreshBAC) {
+            .sheet(isPresented: $showAddDrink) {
                 AddDrinkView()
             }
             .onAppear(perform: refreshBAC)
             .onReceive(refreshTimer) { _ in refreshBAC() }
+            .onChange(of: allDrinks) { _, _ in refreshBAC() }
         }
         .preferredColorScheme(.dark)
     }
