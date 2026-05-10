@@ -9,16 +9,20 @@ struct SoberCurfewApp: App {
 
     init() {
         let schema = Schema([DrinkEntry.self, UserProfile.self])
-        // CloudKit sync enabled — remove cloudKitDatabase parameter for local-only builds
-        let config = ModelConfiguration(
+        let cloudConfig = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .automatic
         )
-        do {
-            container = try ModelContainer(for: schema, configurations: [config])
-        } catch {
-            fatalError("SwiftData ModelContainer failed to initialize: \(error)")
+        if let cloudContainer = try? ModelContainer(for: schema, configurations: [cloudConfig]) {
+            container = cloudContainer
+        } else {
+            let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            do {
+                container = try ModelContainer(for: schema, configurations: [localConfig])
+            } catch {
+                fatalError("SwiftData ModelContainer failed to initialize: \(error)")
+            }
         }
     }
 
