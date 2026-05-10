@@ -165,6 +165,7 @@ struct AddDrinkView: View {
                         ) {
                             selectedPreset = preset
                             showManualEntry = false
+                            isCarbonated = false
                         }
                     }
                 }
