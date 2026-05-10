@@ -87,13 +87,7 @@ struct DisclaimerView: View {
     }
 
     private func accept() {
-        if let profile = try? modelContext.fetch(FetchDescriptor<UserProfile>()).first {
-            profile.hasAcceptedDisclaimer = true
-        } else {
-            let profile = UserProfile()
-            profile.hasAcceptedDisclaimer = true
-            modelContext.insert(profile)
-        }
+        UserProfile.fetchOrCreate(in: modelContext).hasAcceptedDisclaimer = true
         hasAccepted = true
     }
 }

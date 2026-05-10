@@ -59,7 +59,7 @@ private let quickCategories: [(category: DrinkCategory, label: String)] = [
 struct AddDrinkView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
 
     @State private var mode: LogMode = .ultra
 

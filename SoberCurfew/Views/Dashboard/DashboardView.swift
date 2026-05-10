@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 private let appGroupID = "group.com.sobercurfew.app"
 
@@ -8,7 +9,7 @@ struct DashboardView: View {
     @Environment(HealthKitManager.self) private var healthKit
     @Environment(NotificationManager.self) private var notifications
     @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allDrinks: [DrinkEntry]
-    @Query private var profiles: [UserProfile]
+    @Query(sort: \UserProfile.createdAt) private var profiles: [UserProfile]
 
     @State private var showAddDrink = false
     @State private var metabolism = MetabolismManager()
@@ -113,11 +114,12 @@ struct DashboardView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAddDrink, onDismiss: refreshBAC) {
+            .sheet(isPresented: $showAddDrink) {
                 AddDrinkView()
             }
             .onAppear(perform: refreshBAC)
             .onReceive(refreshTimer) { _ in refreshBAC() }
+            .onChange(of: allDrinks) { _, _ in refreshBAC() }
         }
         .preferredColorScheme(.dark)
     }
@@ -194,6 +196,7 @@ struct DashboardView: View {
         defaults.set(currentBAC, forKey: "bac")
         defaults.set(soberTime?.timeIntervalSince1970 ?? 0, forKey: "soberTime")
         defaults.set(sleepImpact.widgetImpactKey, forKey: "impact")
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func countdownLabel(_ date: Date) -> String {
